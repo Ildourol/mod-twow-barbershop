@@ -1,0 +1,60 @@
+[Barbershop]
+# ============================================================================
+#  Turtle WoW Barbershop Module Configuration
+# ============================================================================
+
+#
+# Barbershop.Enable
+#     Enable or disable the barbershop system.
+#     Default: 1 (Enabled)
+#              0 (Disabled)
+#
+Barbershop.Enable = 1
+
+#
+# Barbershop.ChairEntries
+#     Whitespace or comma-separated list of GameObject template entries
+#     that serve as interactive Barbershop Chairs.
+#     Entry 105180 is the canonical Turtle WoW Barbershop Chair.
+#     Default: "105180"
+#
+Barbershop.ChairEntries = "105180"
+
+#
+# Barbershop.Cost.Base
+#     Base cost multiplier in copper for calculating customization prices.
+#     Cost formula: (PlayerLevel ^ 2) * Barbershop.Cost.Base * (Percentage / 100)
+#     Default: 5
+#
+Barbershop.Cost.Base = 5
+
+#
+# Barbershop.Cost.Style
+#     Percentage multiplier applied to base cost when changing hair style.
+#     Default: 100
+#
+Barbershop.Cost.Style = 100
+
+#
+# Barbershop.Cost.Color
+#     Percentage multiplier applied to base cost when changing hair color
+#     without changing hair style.
+#     Default: 50
+#
+Barbershop.Cost.Color = 50
+
+#
+# Barbershop.Cost.FacialHair
+#     Percentage multiplier applied to base cost when changing facial hair
+#     or facial features / markings / tusks / earrings.
+#     Default: 75
+#
+Barbershop.Cost.FacialHair = 75
+
+#
+# Barbershop.MaxChairDistance
+#     Maximum distance in yards a player may drift from their chair before
+#     their editing session automatically closes.
+#     Default: 5.0
+#
+Barbershop.MaxChairDistance = 5.0

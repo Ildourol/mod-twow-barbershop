@@ -1,0 +1,17 @@
+# Workspace and documentation files excluded from repository
+AGENTS.md
+docs/
+tests/
+
+# Build artifacts and editor directories
+build/
+bin/
+*.obj
+*.lib
+*.dll
+*.exe
+*.pdb
+*.log
+.vs/
+.vscode/
+*.user
