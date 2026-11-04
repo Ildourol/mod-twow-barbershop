@@ -37,45 +37,92 @@ A high-performance server-side module for Turtle WoW (1.18.1 / 1.12.1 vMaNGOS) t
 
 ## Installation
 
-### 1. Database Setup
+These steps assume you have a working [TortoiseWoW](https://github.com/Penqle/tortoise-wow) source checkout, initialized core databases, and the server data files for your realm. Use a core revision compatible with this module. Run all build and SQL commands from the core source root, the directory containing the core's `CMakeLists.txt`.
 
-Apply the world database script binding:
 
-```sql
-UPDATE `gameobject_template`
-SET `script_name` = 'go_barber_chair'
-WHERE `entry` = 105180;
-```
+### 1. Add the module and build on Linux
 
-Alternatively, import `data/sql/world/001_barbershop_chair.sql` into the `tw_world` database.
-
-### 2. Module Registration
-
-Clone or copy `mod-twow-barbershop` into the core module directory:
+Use Git, CMake, a C++17 compiler, and the core's build dependencies. On Debian or Ubuntu, a typical starting point is:
 
 ```bash
-# Example directory structure:
-# tortoise-wow/modules/mod-twow-barbershop
+sudo apt update
+sudo apt install git cmake build-essential libace-dev default-libmysqlclient-dev libssl-dev zlib1g-dev
 ```
 
-### 3. CMake Configuration & Compilation
-
-Generate build files and compile the server with module support:
+Use your distribution's `mysql` or `mariadb` command-line client if importing SQL manually. Keep any additional dependency and CMake settings required by your core and other enabled modules.
 
 ```bash
-cmake -S tortoise-wow -B build -DMODULE_MOD_TWOW_BARBERSHOP=static
-cmake --build build --config RelWithDebInfo --target mangosd
+cd /path/to/tortoise-wow
+git clone https://github.com/Ildourol/mod-twow-barbershop.git modules/mod-twow-barbershop
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$PWD/server-stage" -DMODULE_MOD_TWOW_BARBERSHOP=static
+cmake --build build --parallel
+cmake --install build
 ```
 
-### 4. Configuration Deployment
+### 2. Add the module and build on Windows
 
-Copy the distributed configuration file to your server module configuration path:
+Install Git for Windows, CMake 3.21 or later, and Visual Studio 2022 or its Build Tools with **Desktop development with C++** and a Windows SDK. Open PowerShell with Git and CMake on `PATH`. Use an x64 build and the dependency setup of your working core.
+
+```powershell
+Set-Location 'C:\src\tortoise-wow'
+git clone https://github.com/Ildourol/mod-twow-barbershop.git modules/mod-twow-barbershop
+cmake -S . -B build-vs -G "Visual Studio 17 2022" -A x64 "-DCMAKE_INSTALL_PREFIX=$PWD/server-stage" -DMODULE_MOD_TWOW_BARBERSHOP=static
+cmake --build build-vs --config Release --parallel
+cmake --install build-vs --config Release
+```
+
+Check each command for errors before continuing. Both builds include `mangosd`. If the configure output reports an unused module switch, verify the source placement before building. The two build sections are platform alternatives. If you already have a module checkout, use it in place of the clone. A full directory copy, a Linux symlink, or a Windows directory junction works as long as `modules/mod-twow-barbershop/src/` is directly below the module directory. The module directory name determines the CMake switch and loader symbol. If reusing a build directory, keep its generator and architecture and preserve the switches for your other modules. Reconfigure after adding the module and verify CMake lists it as static.
+
+The staged world server is normally `server-stage/bin/mangosd` on Linux and `server-stage/mangosd.exe` on Windows. Stop the running world server before deploying the rebuilt executable and any required runtime libraries or module assets. Preserve the live configuration and data files. The paths below assume the standard staged layout. For an existing deployment, use the directory containing the active `mangosd.conf`, including a custom path passed via `-c`.
+
+### 3. Set up the database
+
+Back up the affected databases. The examples use `tw_char` and `tw_world` as database names. Substitute the names from the active `CharacterDatabase.Info` and `WorldDatabase.Info` settings as applicable, plus your database user and any connection options.
+
+For a fresh install, apply the world script manually. The shipped character script `data/sql/character/001_barbershop_character.sql` drops the obsolete `character_barbershop_look` table. It is legacy cleanup and is unnecessary for a fresh installation. Exclude this module from automatic updates unless you intend to run that cleanup.
+
+**Manual import on Linux (Bash)**
 
 ```bash
-cp conf/mod-twow-barbershop.conf.dist Server/etc/modules/mod-twow-barbershop.conf
+mysql -u root -p tw_world < "modules/mod-twow-barbershop/data/sql/world/001_barbershop_chair.sql"
 ```
 
----
+**Manual import on Windows (PowerShell)**
+
+Run `Get-Command mysql.exe` first. If it is unavailable, install the MySQL or MariaDB command-line client and add its `bin` directory to the current PowerShell session. Replace the example path below with your installation path. Use `mariadb.exe` in the import commands if that is the client you installed. Run imports in the order shown and stop if any command reports an error. `cmd.exe` handles input redirection so the SQL file reaches the client directly.
+
+```powershell
+# Only needed when mysql.exe is installed but missing from PATH
+# $env:Path = 'C:\Program Files\MySQL\MySQL Server 8.0\bin;' + $env:Path
+cmd.exe /d /c 'mysql.exe -u root -p tw_world < modules\mod-twow-barbershop\data\sql\world\001_barbershop_chair.sql'
+if ($LASTEXITCODE -ne 0) { throw "Module SQL import failed" }
+```
+
+### 4. Deploy and enable the configuration
+
+Create `mod-twow-barbershop.conf` inside the `modules/` subdirectory beside the active `mangosd.conf`. For a first install using the example staging directory, the following commands copy the shipped template. If an active module config already exists, retain it and merge new settings from the template.
+
+**Linux**
+
+```bash
+mkdir -p server-stage/etc/modules
+cp -n "modules/mod-twow-barbershop/conf/mod-twow-barbershop.conf.dist" "server-stage/etc/modules/mod-twow-barbershop.conf"
+```
+
+**Windows (PowerShell)**
+
+```powershell
+New-Item -ItemType Directory -Force 'server-stage/modules' | Out-Null
+if (-not (Test-Path 'server-stage/modules/mod-twow-barbershop.conf')) {
+    Copy-Item 'modules/mod-twow-barbershop/conf/mod-twow-barbershop.conf.dist' 'server-stage/modules/mod-twow-barbershop.conf'
+}
+```
+
+Keep the template's section header and confirm `Barbershop.Enable = 1` in the active file. Start the rebuilt server with your normal launcher and active `mangosd.conf`. Check the startup log for module configuration, database, and dependency errors.
+
+### Verify the installation
+
+Interact with a barber chair using a test character. If the menu does not open, verify that world template `105180` exists and its script is `go_barber_chair`.
 
 ## Configuration Reference
 
