@@ -1,7 +1,12 @@
-# Workspace and documentation files excluded from repository
+# Workspace, agent, testing, and internal verification files (Local Only - Never Push to GitHub)
 AGENTS.md
-docs/
+.agents/
 tests/
+t/
+test_*
+docs/
+!docs/images/
+!docs/images/**
 
 # Build artifacts and editor directories
 build/
